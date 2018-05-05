@@ -1,0 +1,1 @@
+INSERT INTO input (userID, direction, inputTime) VALUES (%s, %s, now());

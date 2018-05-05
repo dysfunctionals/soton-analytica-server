@@ -1,1 +1,1 @@
-INSERT INTO teamAssign (userID, team) VALUES (%s, %s);
+INSERT INTO teamAssign (userID, team, alive) VALUES (%s, %s, TRUE);
