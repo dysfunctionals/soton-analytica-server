@@ -17,10 +17,12 @@ def getConnection():
     return psycopg2.connect("dbname='dysfunctional' user='allen' host='localhost' password='anything'")
 
 directions = dict({"-1":"left", "0":"none", "1":"right"})
+swapaxes= dict({"left":"up", "right":"down", "none":"none"})
+
 
 #read queries from file
 query = dict()
-queryNames = ['teamPicker', 'registerPlayer', 'input', 'data']
+queryNames = ['teamPicker', 'registerPlayer', 'input', 'data', 'deleteInactive', 'inactiveid']
 for queryName in queryNames:
     f = open('queries/' + queryName + '.sql', 'r')
     query[queryName] = f.read()
@@ -67,24 +69,47 @@ def logUser(team, id):
 
 @app.route("/data")
 def getData():
+    seconds = request.args.get("seconds")
+    print(seconds)
     userValues = dict()
     teams = dict()
     conn = getConnection()
     cursor = conn.cursor()
-    cursor.execute(query['data'])
+    cursor.execute(query['data'], (str(seconds) + " seconds",))
     for row in cursor.fetchall():
         userValues[row[0]] = row[2]
         teams[row[0]] = row[3]
-    data = dict({"zucc":{"left":0, "none":0, "right":0}, "user":{"left":0, "none":0, "right":0}})
-    print(json.dumps(userValues))
+    data = dict({"zucc":{"up":0, "none":0, "down":0}, "user":{"up":0, "none":0, "down":0}})
     for userID, direction in userValues.items():
-        data[teams[userID]][direction] += 1
+        data[teams[userID]][swapaxes[direction]] += 1
     resp = Response(json.dumps(data))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     resp.headers['Content-Type'] = 'application/json'
     return resp
 
-    
+def sqlFormat(list):
+    output = "("
+    for element in list:
+        output += "'" + element + "',"
+    return output[:-1] + ")"
+
+
+def watchdog():
+    while True:
+        conn = getConnection()
+        cursor = conn.cursor()
+        cursor.execute(query['inactiveid'])
+        dead = list()
+        for row in cursor.fetchall():
+            dead.append(row[0])
+        conn = getConnection()
+        cursor = conn.cursor()
+        updateQuery = query['deleteInactive'].replace("<replace>", sqlFormat(dead))
+        cursor.execute(updateQuery)
+        conn.commit()
+        sleep(60)
 
 if __name__ == '__main__':
+    thread = Thread(target = watchdog)
+    thread.start()
     app.run(debug=True, port=80, host='0.0.0.0')
