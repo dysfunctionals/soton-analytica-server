@@ -112,4 +112,4 @@ def watchdog():
 if __name__ == '__main__':
     thread = Thread(target = watchdog)
     thread.start()
-    app.run(debug=True, port=80, host='0.0.0.0')
+    app.run()
