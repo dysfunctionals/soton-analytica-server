@@ -102,11 +102,13 @@ def watchdog():
         dead = list()
         for row in cursor.fetchall():
             dead.append(row[0])
-        conn = getConnection()
-        cursor = conn.cursor()
-        updateQuery = query['deleteInactive'].replace("<replace>", sqlFormat(dead))
-        cursor.execute(updateQuery)
-        conn.commit()
+        
+        if len(dead) > 0:
+            conn = getConnection()
+            cursor = conn.cursor()
+            updateQuery = query['deleteInactive'].replace("<replace>", sqlFormat(dead))
+            cursor.execute(updateQuery)
+            conn.commit()
         sleep(60)
 
 if __name__ == '__main__':
